@@ -113,8 +113,8 @@ We welcome contributions from the scientific community. Please see our contribut
 ## 📞 Contact
 
 For questions about this demonstration or collaboration opportunities:
-- Technical inquiries: biopath-demo@omnipath.ai
-- Partnership opportunities: partnerships@omnipath.ai
+- Technical inquiries: tech@cloakandquill.org
+- Partnership opportunities: partnerships@cloakandquill.org
 
 ---
 
