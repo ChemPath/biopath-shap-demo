@@ -249,7 +249,7 @@ for fname, sval, fval in zip(self.feature_names, shap_values, feature_values):
     
     feature_importance.append((fname, scalar_val, fval))
 
-feature_importance.sort(key=lambda x: abs(x[1]), reverse=True)
+feature_importance.sort(key=lambda x: abs(float(x[1]) if np.isscalar(x[1]) else float(x[1].flat[0])), reverse=True)
         
         # Generate interpretations for top 10 features
         for feature_name, shap_val, feature_val in feature_importance[:10]:
