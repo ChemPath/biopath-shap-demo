@@ -13,8 +13,7 @@ import numpy as np
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import Descriptors, Crippen, Lipinski, QED
-from rdkit.Chem.Fingerprints import FingerprintMols
-from rdkit.Chem.AtomPairs import Pairs
+from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem.Pharm2D import Generate, Gobbi_Pharm2D
 from rdkit.ML.Descriptors import MoleculeDescriptors
 from scipy.stats import skew, kurtosis
@@ -91,6 +90,34 @@ class MolecularFeatureCalculator:
         
         return descriptors
     
+    def _calculate_fraction_csp3(self, mol: Chem.Mol) -> float:
+        """
+        Calculate fraction of sp3 carbons - handles different RDKit versions.
+        
+        Args:
+            mol: RDKit molecule object
+            
+        Returns:
+            Fraction of sp3 carbons
+        """
+        try:
+            # Try the Lipinski module first (newer RDKit versions)
+            return Lipinski.FractionCsp3(mol)
+        except AttributeError:
+            try:
+                # Try the Descriptors module (older versions)
+                return Descriptors.FractionCsp3(mol)
+            except AttributeError:
+                # Manual calculation as fallback
+                num_carbons = 0
+                num_sp3_carbons = 0
+                for atom in mol.GetAtoms():
+                    if atom.GetAtomicNum() == 6:  # Carbon
+                        num_carbons += 1
+                        if atom.GetHybridization() == Chem.HybridizationType.SP3:
+                            num_sp3_carbons += 1
+                return num_sp3_carbons / num_carbons if num_carbons > 0 else 0
+    
     def calculate_ethnobotanical_features(self, mol: Chem.Mol) -> Dict[str, float]:
         """
         Calculate features specifically relevant to traditional medicine compounds.
@@ -104,8 +131,8 @@ class MolecularFeatureCalculator:
         features = {}
         
         try:
-            # Natural product-likeness indicators
-            features['sp3_fraction'] = Descriptors.FractionCsp3(mol)
+            # Natural product-likeness indicators - FIXED FractionCsp3
+            features['sp3_fraction'] = self._calculate_fraction_csp3(mol)
             features['stereocenters'] = Descriptors.NumAliphaticCarbocycles(mol)
             features['chiral_centers'] = len(Chem.FindMolChiralCenters(mol, includeUnassigned=True))
             
@@ -126,7 +153,14 @@ class MolecularFeatureCalculator:
             
         except Exception as e:
             logging.warning(f"Error calculating ethnobotanical features: {e}")
-            features = {key: 0.0 for key in features.keys()}
+            # Initialize with zeros if calculation fails
+            default_features = {
+                'sp3_fraction': 0.0, 'stereocenters': 0, 'chiral_centers': 0,
+                'bertz_complexity': 0.0, 'balaban_index': 0.0, 'wiener_index': 0.0,
+                'phenol_groups': 0, 'carbonyl_groups': 0, 'ether_groups': 0,
+                'hydroxyl_groups': 0, 'sugar_like': 0, 'isoprene_units': 0
+            }
+            features.update(default_features)
         
         return features
     
@@ -168,13 +202,17 @@ class MolecularFeatureCalculator:
             
         except Exception as e:
             logging.warning(f"Error calculating pharmacophore features: {e}")
-            features = {key: 0.0 for key in features.keys()}
+            features = {
+                'hydrophobic_regions': 0, 'hbd_regions': 0,
+                'hba_regions': 0, 'aromatic_regions': 0,
+                'pharmacophore_density': 0.0
+            }
         
         return features
     
     def calculate_fingerprint_features(self, mol: Chem.Mol) -> Dict[str, int]:
         """
-        Calculate molecular fingerprint features.
+        Calculate molecular fingerprint features using new RDKit API.
         
         Args:
             mol: RDKit molecule object
@@ -188,8 +226,8 @@ class MolecularFeatureCalculator:
             return features
         
         try:
-            # Morgan fingerprints (circular fingerprints)
-            morgan_fp = Chem.rdMolDescriptors.GetMorganFingerprintAsBitVect(
+            # Morgan fingerprints using the new API
+            morgan_fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(
                 mol, radius=self.fingerprint_radius, nBits=1024
             )
             
@@ -197,13 +235,34 @@ class MolecularFeatureCalculator:
             morgan_bits = morgan_fp.ToBitString()
             features.update({f'morgan_bit_{i}': int(bit) for i, bit in enumerate(morgan_bits[:50])})  # First 50 bits for demo
             
-            # Atom pair fingerprints
-            atom_pairs = Pairs.GetAtomPairFingerprintAsBitVect(mol)
+            # Atom pair fingerprints using the new API
+            atom_pairs = rdMolDescriptors.GetHashedAtomPairFingerprintAsBitVect(mol, nBits=1024)
             ap_bits = atom_pairs.ToBitString()
             features.update({f'atompair_bit_{i}': int(bit) for i, bit in enumerate(ap_bits[:25])})  # First 25 bits
             
         except Exception as e:
             logging.warning(f"Error calculating fingerprint features: {e}")
+            # Try alternative fingerprint generation if new API fails
+            try:
+                # Alternative using fingerprint generators (newest API)
+                from rdkit.Chem import rdFingerprintGenerator
+                
+                # Morgan fingerprint generator
+                morgan_gen = rdFingerprintGenerator.GetMorganGenerator(
+                    radius=self.fingerprint_radius, fpSize=1024
+                )
+                morgan_fp = morgan_gen.GetFingerprint(mol)
+                morgan_bits = morgan_fp.ToBitString()
+                features.update({f'morgan_bit_{i}': int(bit) for i, bit in enumerate(morgan_bits[:50])})
+                
+                # Atom pair fingerprint generator
+                ap_gen = rdFingerprintGenerator.GetAtomPairGenerator(fpSize=1024)
+                ap_fp = ap_gen.GetFingerprint(mol)
+                ap_bits = ap_fp.ToBitString()
+                features.update({f'atompair_bit_{i}': int(bit) for i, bit in enumerate(ap_bits[:25])})
+                
+            except Exception as e2:
+                logging.warning(f"Alternative fingerprint generation also failed: {e2}")
         
         return features
     
@@ -277,7 +336,7 @@ class MolecularFeatureCalculator:
         numeric_columns = df.select_dtypes(include=[np.number]).columns
         df[numeric_columns] = df[numeric_columns].fillna(0)
         
-        logging.info(f"Successfully processed {len(df)} molecules with {len(df.columns)} features")
+        logging.info(f"Successfully processed {len(df)} molecules with {len(df.columns)-1} features")
         
         return df
     
