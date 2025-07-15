@@ -23,7 +23,7 @@ This repository demonstrates advanced explainable AI techniques for natural comp
 
 ```bash
 # Clone the repository
-git clone https://github.com/omnipath/biopath-shap-demo.git
+git clone https://github.com/Omnipath2025/biopath-shap-demo.git
 cd biopath-shap-demo
 
 # Install dependencies
