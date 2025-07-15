@@ -235,21 +235,33 @@ class BioPathSHAPExplainer:
         """
         interpretations = []
         
-        # Get top contributing features
-feature_importance = []
-for fname, sval, fval in zip(self.feature_names, shap_values, feature_values):
-    # Handle different SHAP value formats
-    if isinstance(sval, (list, np.ndarray)):
-        if hasattr(sval, 'shape') and len(sval.shape) > 0:
-            scalar_val = float(np.asarray(sval).flatten()[0])
-        else:
-            scalar_val = float(sval[0]) if len(sval) > 0 else 0.0
-    else:
-        scalar_val = float(sval)
-    
-    feature_importance.append((fname, scalar_val, fval))
-
-feature_importance.sort(key=lambda x: abs(float(x[1]) if np.isscalar(x[1]) else float(x[1].flat[0])), reverse=True)
+        # Get top contributing features - fixed version
+        feature_importance = []
+        for i, (fname, sval, fval) in enumerate(zip(self.feature_names, shap_values, feature_values)):
+            try:
+                # Convert SHAP value to scalar safely
+                if isinstance(sval, (list, np.ndarray)):
+                    # Handle array-like values
+                    sval_array = np.asarray(sval)
+                    if sval_array.size == 0:
+                        scalar_val = 0.0
+                    elif sval_array.size == 1:
+                        scalar_val = float(sval_array.flatten()[0])
+                    else:
+                        # If multiple values, take the first one
+                        scalar_val = float(sval_array.flatten()[0])
+                else:
+                    # Already a scalar
+                    scalar_val = float(sval)
+                
+                feature_importance.append((fname, scalar_val, fval))
+            except Exception as e:
+                logging.warning(f"Error processing feature {fname} at index {i}: {e}")
+                # Skip this feature if there's an error
+                continue
+        
+        # Sort by absolute SHAP value
+        feature_importance.sort(key=lambda x: abs(x[1]), reverse=True)
         
         # Generate interpretations for top 10 features
         for feature_name, shap_val, feature_val in feature_importance[:10]:
