@@ -237,7 +237,7 @@ class BioPathSHAPExplainer:
         
         # Get top contributing features
         feature_importance = list(zip(self.feature_names, shap_values, feature_values))
-        feature_importance.sort(key=lambda x: abs(x[1]), reverse=True)
+        feature_importance.sort(key=lambda x: abs(np.asarray(x[1]).flatten()[0]), reverse=True)
         
         # Generate interpretations for top 10 features
         for feature_name, shap_val, feature_val in feature_importance[:10]:
