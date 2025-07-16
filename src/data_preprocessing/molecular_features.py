@@ -55,53 +55,37 @@ class ModernMolecularFeatureCalculator:
         
         logging.info(f"ModernMolecularFeatureCalculator initialized")
     
-    def calculate_basic_descriptors(self, mol: Chem.Mol) -> Dict[str, float]:
-        """Calculate comprehensive molecular descriptors using modern RDKit API."""
-        descriptors = {}
+    # In src/data_preprocessing/molecular_features.py
+# Replace the sp3 fraction calculation section with:
+
+def calculate_basic_descriptors(self, mol: Chem.Mol) -> Dict[str, float]:
+    """Calculate comprehensive molecular descriptors using modern RDKit API."""
+    descriptors = {}
+    
+    try:
+        # ... other descriptors ...
         
+        # Updated sp3 fraction calculation for RDKit 2025.03.3
         try:
-            # Basic molecular properties
-            descriptors['molecular_weight'] = Descriptors.MolWt(mol)
-            descriptors['heavy_atom_count'] = Descriptors.HeavyAtomCount(mol)
-            descriptors['ring_count'] = Descriptors.RingCount(mol)
-            descriptors['aromatic_rings'] = Descriptors.NumAromaticRings(mol)
-            descriptors['rotatable_bonds'] = Descriptors.NumRotatableBonds(mol)
-            
-            # Hydrogen bonding descriptors
-            descriptors['hbd_count'] = Descriptors.NumHDonors(mol)
-            descriptors['hba_count'] = Descriptors.NumHAcceptors(mol)
-            
-            # Physicochemical properties
-            descriptors['logp'] = Crippen.MolLogP(mol)
-            descriptors['tpsa'] = Descriptors.TPSA(mol)
-            descriptors['molar_refractivity'] = Crippen.MolMR(mol)
-            
-            # Drug-likeness metrics
-            descriptors['qed_score'] = QED.qed(mol)
-            
-            # Updated sp3 fraction calculation (resolves RDKit 2025 API change)
+            from rdkit.Chem.Descriptors import FractionCsp3
+            descriptors['sp3_fraction'] = FractionCsp3(mol)
+        except ImportError:
             try:
-                from rdkit.Chem.Descriptors import FractionCsp3
+                from rdkit.Chem.Crippen import FractionCsp3
                 descriptors['sp3_fraction'] = FractionCsp3(mol)
             except ImportError:
-                # Fallback for newer RDKit versions
-                from rdkit.Chem.rdMolDescriptors import CalcFractionCsp3
-                descriptors['sp3_fraction'] = CalcFractionCsp3(mol)
-            
-            # Complexity descriptors
-            descriptors['bertz_complexity'] = Descriptors.BertzCT(mol)
-            descriptors['balaban_index'] = Descriptors.BalabanJ(mol)
-            
-            # Charge-related descriptors
-            descriptors['formal_charge'] = Descriptors.FormalCharge(mol)
-            descriptors['radical_electrons'] = Descriptors.NumRadicalElectrons(mol)
-            
-        except Exception as e:
-            logging.warning(f"Error calculating basic descriptors: {e}")
-            # Return default values for failed calculations
-            descriptors = {key: 0.0 for key in descriptors.keys()}
+                # Fallback calculation if function moved
+                descriptors['sp3_fraction'] = 0.0
+                logging.warning("FractionCsp3 not available in this RDKit version")
         
-        return descriptors
+        # ... rest of descriptors ...
+        
+    except Exception as e:
+        logging.warning(f"Error calculating basic descriptors: {e}")
+        descriptors = {key: 0.0 for key in descriptors.keys()}
+    
+    return descriptors
+
     
     def calculate_fingerprint_features(self, mol: Chem.Mol) -> Dict[str, int]:
         """Calculate molecular fingerprints using modern RDKit generators."""
