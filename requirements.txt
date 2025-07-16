@@ -32,5 +32,5 @@ jupyter>=1.0.0
 
 # Optional Dependencies
 torch>=2.0.0  # For deep learning models
-tensorflow>=2.13.0  # Alternative ML framework
+
 
