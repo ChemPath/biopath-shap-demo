@@ -436,7 +436,6 @@ report = explainer.generate_summary_report(explanations)
 - Run unit tests to verify installation: `pytest tests/`
 
 ### File Structure
-
 biopath-shap-demo/
 ├── README.md
 ├── requirements.txt
