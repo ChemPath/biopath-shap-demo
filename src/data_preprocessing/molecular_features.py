@@ -12,7 +12,7 @@ import pandas as pd
 # Updated RDKit imports to resolve deprecations
 from rdkit import Chem
 from rdkit.Chem import Descriptors, Crippen, Lipinski, QED, AllChem
-from rdkit.Chem import rdMolDescriptors, rdFingerprintGenerator
+from rdkit.Chem import rdMolDescriptors, rdFingerprintGenerator, rdmolops
 from rdkit.Chem.Pharm2D import Generate, Gobbi_Pharm2D
 from rdkit.ML.Descriptors import MoleculeDescriptors
 
@@ -55,37 +55,92 @@ class ModernMolecularFeatureCalculator:
         
         logging.info(f"ModernMolecularFeatureCalculator initialized")
     
-    # In src/data_preprocessing/molecular_features.py
-# Replace the sp3 fraction calculation section with:
-
-def calculate_basic_descriptors(self, mol: Chem.Mol) -> Dict[str, float]:
-    """Calculate comprehensive molecular descriptors using modern RDKit API."""
-    descriptors = {}
-    
-    try:
-        # ... other descriptors ...
+    def calculate_basic_descriptors(self, mol: Chem.Mol) -> Dict[str, float]:
+        """Calculate comprehensive molecular descriptors using modern RDKit API."""
+        descriptors = {}
         
-        # Updated sp3 fraction calculation for RDKit 2025.03.3
         try:
-            from rdkit.Chem.Descriptors import FractionCsp3
-            descriptors['sp3_fraction'] = FractionCsp3(mol)
-        except ImportError:
+            # Basic molecular properties
+            descriptors['molecular_weight'] = Descriptors.MolWt(mol)
+            descriptors['heavy_atom_count'] = Descriptors.HeavyAtomCount(mol)
+            descriptors['ring_count'] = Descriptors.RingCount(mol)
+            descriptors['aromatic_rings'] = Descriptors.NumAromaticRings(mol)
+            descriptors['rotatable_bonds'] = Descriptors.NumRotatableBonds(mol)
+            
+            # Hydrogen bonding descriptors
+            descriptors['hbd_count'] = Descriptors.NumHDonors(mol)
+            descriptors['hba_count'] = Descriptors.NumHAcceptors(mol)
+            
+            # Physicochemical properties
+            descriptors['logp'] = Crippen.MolLogP(mol)
+            descriptors['tpsa'] = Descriptors.TPSA(mol)
+            descriptors['molar_refractivity'] = Crippen.MolMR(mol)
+            
+            # Drug-likeness metrics
+            descriptors['qed_score'] = QED.qed(mol)
+            
+            # Updated sp3 fraction calculation for RDKit 2025.03.3
             try:
-                from rdkit.Chem.Crippen import FractionCsp3
+                from rdkit.Chem.Descriptors import FractionCsp3
                 descriptors['sp3_fraction'] = FractionCsp3(mol)
             except ImportError:
-                # Fallback calculation if function moved
-                descriptors['sp3_fraction'] = 0.0
-                logging.warning("FractionCsp3 not available in this RDKit version")
+                try:
+                    from rdkit.Chem.Lipinski import FractionCSP3
+                    descriptors['sp3_fraction'] = FractionCSP3(mol)
+                except ImportError:
+                    # Alternative calculation using hybridization
+                    sp3_count = 0
+                    total_carbons = 0
+                    for atom in mol.GetAtoms():
+                        if atom.GetAtomicNum() == 6:  # Carbon
+                            total_carbons += 1
+                            if atom.GetHybridization() == Chem.HybridizationType.SP3:
+                                sp3_count += 1
+                    descriptors['sp3_fraction'] = sp3_count / total_carbons if total_carbons > 0 else 0.0
+            
+            # Complexity descriptors
+            descriptors['bertz_complexity'] = Descriptors.BertzCT(mol)
+            descriptors['balaban_index'] = Descriptors.BalabanJ(mol)
+            
+            # Updated formal charge calculation for RDKit 2025.03.3
+            try:
+                from rdkit.Chem.Descriptors import FormalCharge
+                descriptors['formal_charge'] = FormalCharge(mol)
+            except ImportError:
+                try:
+                    from rdkit.Chem import rdmolops
+                    descriptors['formal_charge'] = rdmolops.GetFormalCharge(mol)
+                except ImportError:
+                    # Manual calculation fallback
+                    formal_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+                    descriptors['formal_charge'] = formal_charge
+            
+            # Radical electrons
+            descriptors['radical_electrons'] = Descriptors.NumRadicalElectrons(mol)
+            
+        except Exception as e:
+            logging.warning(f"Error calculating basic descriptors: {e}")
+            # Return default values for failed calculations
+            descriptors = {
+                'molecular_weight': 0.0,
+                'heavy_atom_count': 0,
+                'ring_count': 0,
+                'aromatic_rings': 0,
+                'rotatable_bonds': 0,
+                'hbd_count': 0,
+                'hba_count': 0,
+                'logp': 0.0,
+                'tpsa': 0.0,
+                'molar_refractivity': 0.0,
+                'qed_score': 0.0,
+                'sp3_fraction': 0.0,
+                'bertz_complexity': 0.0,
+                'balaban_index': 0.0,
+                'formal_charge': 0,
+                'radical_electrons': 0
+            }
         
-        # ... rest of descriptors ...
-        
-    except Exception as e:
-        logging.warning(f"Error calculating basic descriptors: {e}")
-        descriptors = {key: 0.0 for key in descriptors.keys()}
-    
-    return descriptors
-
+        return descriptors
     
     def calculate_fingerprint_features(self, mol: Chem.Mol) -> Dict[str, int]:
         """Calculate molecular fingerprints using modern RDKit generators."""
