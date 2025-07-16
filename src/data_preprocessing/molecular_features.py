@@ -79,8 +79,14 @@ class ModernMolecularFeatureCalculator:
             # Drug-likeness metrics
             descriptors['qed_score'] = QED.qed(mol)
             
-            # Updated sp3 fraction calculation (resolves deprecation)
-            descriptors['sp3_fraction'] = Descriptors.FractionCsp3(mol)
+            # Updated sp3 fraction calculation (resolves RDKit 2025 API change)
+            try:
+                from rdkit.Chem.Descriptors import FractionCsp3
+                descriptors['sp3_fraction'] = FractionCsp3(mol)
+            except ImportError:
+                # Fallback for newer RDKit versions
+                from rdkit.Chem.rdMolDescriptors import CalcFractionCsp3
+                descriptors['sp3_fraction'] = CalcFractionCsp3(mol)
             
             # Complexity descriptors
             descriptors['bertz_complexity'] = Descriptors.BertzCT(mol)
@@ -143,32 +149,27 @@ class ModernMolecularFeatureCalculator:
             features['chiral_centers'] = len(Chem.FindMolChiralCenters(mol, includeUnassigned=True))
             features['stereocenters'] = Descriptors.NumAliphaticCarbocycles(mol)
             
-            # Functional group patterns common in natural products
-            features['phenol_groups'] = len(mol.GetSubstructMatches(
-                Chem.MolFromSmarts('[OH][c]')
-            ))
-            features['hydroxyl_groups'] = len(mol.GetSubstructMatches(
-                Chem.MolFromSmarts('[OH]')
-            ))
-            features['carbonyl_groups'] = len(mol.GetSubstructMatches(
-                Chem.MolFromSmarts('[#6]=[#8]')
-            ))
-            features['ether_groups'] = len(mol.GetSubstructMatches(
-                Chem.MolFromSmarts('[#6]-[#8]-[#6]')
-            ))
+            # Functional group patterns with null checking
+            patterns = {
+                'phenol_groups': '[OH][c]',
+                'hydroxyl_groups': '[OH]',
+                'carbonyl_groups': '[#6]=[#8]',
+                'ether_groups': '[#6]-[#8]-[#6]',
+                'nitrogen_containing': '[N]',
+                'basic_nitrogen': '[N;!$(N=*);!$(N-*=!#6)]',
+                'sugar_like': '[CH2]([OH])[CH]([OH])'
+            }
             
-            # Terpene and alkaloid indicators
-            features['nitrogen_containing'] = len(mol.GetSubstructMatches(
-                Chem.MolFromSmarts('[N]')
-            ))
-            features['basic_nitrogen'] = len(mol.GetSubstructMatches(
-                Chem.MolFromSmarts('[N;!$(N=*);!$(N-*=!#6)]')
-            ))
-            
-            # Glycoside-like patterns
-            features['sugar_like'] = len(mol.GetSubstructMatches(
-                Chem.MolFromSmarts('[CH2]([OH])[CH]([OH])')
-            ))
+            for feature_name, pattern in patterns.items():
+                try:
+                    smarts_mol = Chem.MolFromSmarts(pattern)
+                    if smarts_mol is not None:
+                        features[feature_name] = len(mol.GetSubstructMatches(smarts_mol))
+                    else:
+                        features[feature_name] = 0
+                except Exception as e:
+                    logging.warning(f"Error calculating {feature_name}: {e}")
+                    features[feature_name] = 0
             
         except Exception as e:
             logging.warning(f"Error calculating ethnobotanical features: {e}")
@@ -277,4 +278,3 @@ class ModernMolecularFeatureCalculator:
         """Get all possible feature names."""
         sample_features = self.calculate_all_features('CCO')  # Ethanol as test
         return list(sample_features.keys()) if sample_features else []
-
