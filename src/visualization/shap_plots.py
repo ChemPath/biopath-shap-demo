@@ -120,10 +120,24 @@ class SHAPVisualization:
             # Calculate feature importance
             importance = np.mean(np.abs(shap_values), axis=0)
             
-            # Get top features
+            # Ensure importance is 1D array
+            if len(importance.shape) > 1:
+                importance = importance.flatten()
+            
+            # Get top features with proper indexing
             top_indices = np.argsort(importance)[-max_features:][::-1]
-            top_features = [feature_names[i] for i in top_indices]
-            top_importance = importance[top_indices]
+            
+            # Ensure indices are integers
+            top_indices = top_indices.astype(int)
+            
+            # Safe indexing with bounds checking
+            top_features = []
+            top_importance = []
+            
+            for idx in top_indices:
+                if 0 <= idx < len(feature_names):
+                    top_features.append(feature_names[idx])
+                    top_importance.append(importance[idx])
             
             # Create figure
             fig, ax = plt.subplots(figsize=(12, max(8, len(top_features) * 0.4)))
@@ -390,102 +404,6 @@ class SHAPVisualization:
             logging.error(f"Error creating molecular heatmap: {e}")
             raise
     
-    def create_traditional_knowledge_analysis(self,
-                                            shap_values: np.ndarray,
-                                            feature_names: List[str],
-                                            title: str = "Traditional Knowledge Feature Analysis") -> plt.Figure:
-        """
-        Create visualization highlighting traditional knowledge-related features.
-        
-        Args:
-            shap_values: SHAP values matrix (samples x features)
-            feature_names: List of feature names
-            title: Plot title
-            
-        Returns:
-            matplotlib.Figure: Traditional knowledge analysis plot
-        """
-        try:
-            # Identify traditional knowledge features
-            tk_features = {
-                'Phenolic Compounds': [],
-                'Alkaloids': [],
-                'Terpenoids': [],
-                'Flavonoids': [],
-                'Functional Groups': []
-            }
-            
-            # Feature patterns
-            patterns = {
-                'Phenolic Compounds': ['phenol', 'hydroxyl', 'caffeic', 'gallic'],
-                'Alkaloids': ['nitrogen', 'caffeine', 'berberine'],
-                'Terpenoids': ['limonene', 'menthol', 'steroid'],
-                'Flavonoids': ['quercetin', 'kaempferol', 'catechin'],
-                'Functional Groups': ['carbonyl', 'ether', 'ester']
-            }
-            
-            for feature in feature_names:
-                feature_lower = feature.lower()
-                categorized = False
-                
-                for category, pattern_list in patterns.items():
-                    if any(pattern in feature_lower for pattern in pattern_list):
-                        tk_features[category].append(feature)
-                        categorized = True
-                        break
-                
-                if not categorized and any(term in feature_lower for term in ['traditional', 'ethnobotanical']):
-                    tk_features['Functional Groups'].append(feature)
-            
-            # Calculate importance for each category
-            category_importance = {}
-            for category, features in tk_features.items():
-                if features:
-                    indices = [feature_names.index(f) for f in features if f in feature_names]
-                    if indices:
-                        category_shap = shap_values[:, indices]
-                        category_importance[category] = np.mean(np.abs(category_shap))
-            
-            # Create figure
-            fig, ax = plt.subplots(figsize=(12, 8))
-            
-            if category_importance:
-                categories = list(category_importance.keys())
-                importances = list(category_importance.values())
-                
-                # Create bar plot with traditional knowledge colors
-                colors = ['#8B4513', '#4B0082', '#228B22', '#FF6347', '#DAA520']
-                bars = ax.bar(categories, importances, 
-                             color=colors[:len(categories)], 
-                             alpha=0.8, edgecolor='black')
-                
-                # Customize plot
-                ax.set_xlabel('Traditional Knowledge Categories')
-                ax.set_ylabel('Mean |SHAP Value|')
-                ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
-                ax.tick_params(axis='x', rotation=45)
-                
-                # Add value labels
-                for bar, value in zip(bars, importances):
-                    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.001,
-                           f'{value:.3f}', ha='center', va='bottom')
-                
-                # Add grid
-                ax.grid(axis='y', alpha=0.3)
-            else:
-                ax.text(0.5, 0.5, 'No traditional knowledge features identified', 
-                       ha='center', va='center', transform=ax.transAxes,
-                       fontsize=14, style='italic')
-            
-            plt.tight_layout()
-            logging.info(f"Created traditional knowledge analysis plot")
-            
-            return fig
-            
-        except Exception as e:
-            logging.error(f"Error creating traditional knowledge analysis: {e}")
-            raise
-    
     def _add_feature_group_colors(self, ax, features: List[str], y_positions: np.ndarray):
         """Add colored bars to indicate feature groups."""
         try:
@@ -519,28 +437,3 @@ class SHAPVisualization:
             
         except Exception as e:
             logging.warning(f"Error adding feature group colors: {e}")
-    
-    def save_publication_ready_figure(self, 
-                                     fig: plt.Figure,
-                                     filename: str,
-                                     dpi: int = 300,
-                                     formats: List[str] = ['png', 'pdf']):
-        """
-        Save figure in publication-ready formats.
-        
-        Args:
-            fig: matplotlib Figure object
-            filename: Base filename (without extension)
-            dpi: Resolution for raster formats
-            formats: List of formats to save
-        """
-        try:
-            for fmt in formats:
-                full_filename = f"{filename}.{fmt}"
-                fig.savefig(full_filename, dpi=dpi, bbox_inches='tight', 
-                           format=fmt, facecolor='white', edgecolor='none')
-                logging.info(f"Saved figure as {full_filename}")
-                
-        except Exception as e:
-            logging.error(f"Error saving figure: {e}")
-
