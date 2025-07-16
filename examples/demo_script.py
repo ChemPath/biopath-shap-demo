@@ -18,7 +18,7 @@ sys.path.append(str(Path(__file__).parent.parent / 'src'))
 
 from data_preprocessing.molecular_features import ModernMolecularFeatureCalculator
 from explainers.bio_shap_explainer import ModernBioPathSHAPExplainer
-from visualization.shap_plots import create_modern_shap_plots
+from visualization.shap_plots import SHAPVisualization  # Corrected import
 
 def main():
     """Run the modern BioPath SHAP demonstration."""
@@ -32,10 +32,10 @@ def main():
     # Sample natural product SMILES for demonstration
     sample_compounds = [
         'c1cc(ccc1c2cc(=O)c3c(cc(cc3o2)O)O)O',  # Quercetin
-        'CN1CCc2cc3c(cc2C1)OCO3',  # Berberine
+        'CN1CCc2cc3c(cc2C1)OCO3',                # Berberine
         'COc1cc(cc(c1O)OC)c2cc(=O)c3c(o2)cc(cc3O)O',  # Chrysin
-        'c1cc(c(cc1CC(C(=O)O)N)O)O',  # L-DOPA
-        'c1cc(ccc1C=CC(=O)O)O',  # p-Coumaric acid
+        'c1cc(c(cc1CC(C(=O)O)N)O)O',            # L-DOPA
+        'c1cc(ccc1C=CC(=O)O)O',                 # p-Coumaric acid
     ]
     
     # Generate synthetic bioactivity labels
@@ -91,6 +91,23 @@ def main():
         )
         explanations.append(explanation)
     
+    # Create visualizations using SHAPVisualization class
+    print("📊 Creating SHAP visualizations...")
+    visualizer = SHAPVisualization(
+        feature_groups=feature_groups,
+        style='professional'
+    )
+    
+    # Collect SHAP values for visualization
+    shap_matrix = np.array([exp['shap_values'] for exp in explanations])
+    
+    # Create feature importance summary
+    fig = visualizer.create_feature_importance_summary(
+        shap_matrix,
+        feature_columns,
+        title="BioPath SHAP Feature Importance"
+    )
+    
     # Generate report
     print("📄 Generating analysis report...")
     report = explainer.generate_summary_report(
@@ -110,4 +127,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
