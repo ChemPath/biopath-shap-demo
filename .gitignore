@@ -63,7 +63,6 @@ db.sqlite3-journal
 
 # Flask stuff:
 instance/
-.webassets-cache
 
 # Scrapy stuff:
 .scrapy
@@ -159,7 +158,6 @@ biopath_shap_analysis_report.md
 # Visualization outputs
 figures/
 plots/
-*.png
 *.jpg
 *.jpeg
 *.gif
@@ -373,3 +371,4 @@ quick_test/
 .env*
 !.env.example
 
+# Allow visual assets for documentation
