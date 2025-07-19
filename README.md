@@ -36,12 +36,17 @@ Our SHAP (SHapley Additive exPlanations) framework provides transparent insight 
 ## 🚀 Quick Start for Researchers
 
 ### Installation
+
 ```bash
 git clone https://github.com/Omnipath2025/biopath-shap-demo.git
 cd biopath-shap-demo
 pip install -r requirements.txt
-Demo: SHAP Analysis
-pythonfrom biopath import CulturalBiasDetector, TherapeuticValidator
+```
+
+### Demo: SHAP Analysis
+
+```python
+from biopath import CulturalBiasDetector, TherapeuticValidator
 
 # Initialize with cultural bias correction
 validator = TherapeuticValidator(
@@ -58,43 +63,44 @@ result = validator.validate_therapeutic(
 
 # View SHAP explanation
 result.plot_shap_explanation()
-📊 Research Applications
-Pharmaceutical Research
+```
 
-Therapeutic efficacy validation with cultural context preservation
-Traditional medicine integration in modern drug development
-Bias-corrected clinical trial design incorporating indigenous knowledge
+## 📊 Research Applications
 
-Academic Research
+### Pharmaceutical Research
+- **Therapeutic efficacy validation** with cultural context preservation
+- **Traditional medicine integration** in modern drug development
+- **Bias-corrected clinical trial design** incorporating indigenous knowledge
 
-Publication-ready outputs with explainable AI methodology
-Cross-cultural therapeutic analysis with ethical frameworks
-Traditional knowledge attribution with EquiPath compensation integration
+### Academic Research
+- **Publication-ready outputs** with explainable AI methodology
+- **Cross-cultural therapeutic analysis** with ethical frameworks
+- **Traditional knowledge attribution** with EquiPath compensation integration
 
-🤝 Integration with OmniPath Ecosystem
+## 🤝 Integration with OmniPath Ecosystem
 
-EquiPath Integration: Automatic fair compensation for traditional knowledge contributors
-EthnoPath Connection: Cultural context preservation and respectful digitization
-ChemPath Coordination: Quantum-enhanced chemical analysis with cultural awareness
+- **EquiPath Integration**: Automatic fair compensation for traditional knowledge contributors
+- **EthnoPath Connection**: Cultural context preservation and respectful digitization
+- **ChemPath Coordination**: Quantum-enhanced chemical analysis with cultural awareness
 
-📖 Documentation
+## 📖 Documentation
 
-API Reference
-Cultural Bias Correction Guide
-Research Methodology
+- [API Reference](docs/api_reference.md)
+- [Cultural Bias Correction Guide](docs/cultural_bias_guide.md)
+- [Research Methodology](docs/methodology.md)
 
-🏆 Recognition & Validation
+## 🏆 Recognition & Validation
 
-Patent Portfolio: $394M in therapeutic validation innovations
-Academic Partnerships: University research collaborations
-Community Validation: Traditional knowledge holder endorsements
+- **Patent Portfolio**: $394M in therapeutic validation innovations
+- **Academic Partnerships**: University research collaborations
+- **Community Validation**: Traditional knowledge holder endorsements
 
-📞 Research Collaboration
-Cloak & Quill Research | 501(c)(3) Public Benefit Organization
+## 📞 Research Collaboration
 
-Research inquiries: research@cloakandquill.org
-Partnership opportunities: partnerships@cloakandquill.org
-Technical support: support@biopath.ai
+**Cloak & Quill Research** | 501(c)(3) Public Benefit Organization
+- Research inquiries: research@cloakandquill.org
+- Partnership opportunities: partnerships@cloakandquill.org
+- Technical support: support@biopath.ai
 
-
-BioPath: Bridging traditional wisdom and modern science through explainable, culturally-aware therapeutic validation
+---
+*BioPath: Bridging traditional wisdom and modern science through explainable, culturally-aware therapeutic validation*
