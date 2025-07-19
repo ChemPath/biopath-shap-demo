@@ -33,6 +33,28 @@ Our SHAP (SHapley Additive exPlanations) framework provides transparent insight 
 - **Deployment Scaling**: 24K-78K validations/hour across standalone to ecosystem modes
 - **Cultural Bias Detection**: Real-time SHAP analysis with correction protocols
 
+## 🔬 Complete Validation Pipeline
+
+![BioPath Validation Flowcharts](assets/diagrams/biopath_validation_flowcharts.png)
+
+### Therapeutic Validation Process
+
+**Data Input & Cultural Integration:**
+1. **Traditional Knowledge Database** - Ethnobotanical and cultural context data
+2. **Clinical Trial Data** - Modern pharmaceutical research results
+3. **Molecular Structure Data** - Chemical compound information
+4. **Cultural Context** - Indigenous knowledge preservation protocols
+
+**SHAP-Based Processing:**
+- Real-time cultural bias detection with 30% minimum threshold
+- Automatic weight correction and rebalancing when needed
+- Transparent explainability for all validation decisions
+
+**Deployment Flexibility:**
+- **Standalone Research**: 24K validations/hour, 87% accuracy
+- **Clinical Bundle Integration**: 45K validations/hour, 90% accuracy  
+- **Full Ecosystem Coordination**: 78K validations/hour, 93% accuracy
+
 ## 🚀 Quick Start for Researchers
 
 ### Installation
